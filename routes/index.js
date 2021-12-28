@@ -138,7 +138,7 @@ router.get("/update", function (req, res) {
 //
 router.get("/doi", function (req, res) {
   console.log("Received GET: " + JSON.stringify(req.body));
-  if (!req.query.doi) {
+  if (!req.query.doi && !req.query.issn) {
     return res.send({ status: "error", message: "no username" });
     //} else if (!req.query.data) {
     //  return res.send({ status: "error", message: "no data" });
@@ -156,7 +156,8 @@ router.get("/doi", function (req, res) {
 
     /*----------------------------------------*/
     /*-----------------------------------------*/
-    /* 引数　-i --issn の時 */
+
+    /* 引数　-i --issn の時 
     function call_issn(issn) {
       issn === "true" ? console.log("ISSNではない") : issn;
       // let baseurl = 'http://te7fv6dm8k.openurl.xml.serialssolutions.com/openurlxml?version=1.0&ctx_ver=Z39.88-2004&ctx_enc=info:ofi/enc:UTF-8&rft.issn=';
@@ -165,6 +166,7 @@ router.get("/doi", function (req, res) {
       baseurl += String(issn);
       main(baseurl);
     }
+    */
 
     /* 引数　-d --doi の時 */
     function call_doi(doi) {
@@ -205,10 +207,119 @@ router.get("/doi", function (req, res) {
         asyncSample(baseurl, namae).then((async_res) => {
           // final_result3 = asyncSample(baseurl, namae).then((res) => {
           // 最後の結果だけを取り出すため、呼び出しの回数を数える
+
           if (async_res) {
             kaisu++;
           }
-          if (kaisu == portal.length - 0) {
+          if (kaisu == portal.length) {
+            // onsole.log(res);
+            // disp_result(json_result);
+            final_result2 = disp_result(json_result);
+            // console.log("asyncSample:", final_result2);
+            // final_result2 = final_result2.replace(/\\"/g, '"');
+            res.set({ "Access-Control-Allow-Origin": "*" }); // 違う気がするーーーーここでヘッダーにアクセス許可の情報を追加
+            // レスポンスのボディにJSONを返す場合は、res.json([body])メソッドを使用
+            return res.json(final_result2);
+            // disp_result(res);
+            // return await final_result2;
+          }
+        });
+        // return final_result2;
+      } // for close
+      //return await final_result2;
+    } // close_main
+
+    /* 結果の表示 */
+    function disp_result(arr) {
+      if (options.format == "json") {
+        // onsole.log('ここのarr', namae, arr);
+        // arr ? onsole.log(util.inspect(arr, {showHidden: false, depth: null})) : "";
+        // console.log(JSON.stringify(arr, null, "\t")); // どっちか？
+        // final_result = JSON.stringify(arr, null, "\t");
+        // final_result = JSON.stringify(arr); // 二重デコード防止のため
+        final_result = arr;
+      } else {
+        // plotres(arr, ""); // 階層化された JSON を再帰的に読み込む
+        final_result = plotres(arr, ""); // 階層化された JSON を再帰的に読み込む
+      }
+      return final_result;
+    }
+
+    /* 最後 */
+    // console.log("saugi:", res);
+    // return res.send("ff");
+  } else if (req.query.issn) {
+    /*-----ここからapi処理部----*/
+
+    const options = {
+      format: "json",
+    };
+    //    const doi = "10.1080/01930826.2015.1105041";
+    // doi="10.1080/00987913.2020.1806658"
+    console.log(req.query.issn);
+    const issn = req.query.issn;
+    if (issn) call_issn(issn);
+    // if (issn) call_issn(`${options.issn}`);
+
+    /*----------------------------------------*/
+    /*-----------------------------------------*/
+
+    /* 引数　-i --issn の時 */
+    function call_issn(issn) {
+      issn === "true" ? console.log("ISSNではない") : issn;
+      console.log(issn);
+      // let baseurl = 'http://te7fv6dm8k.openurl.xml.serialssolutions.com/openurlxml?version=1.0&ctx_ver=Z39.88-2004&ctx_enc=info:ofi/enc:UTF-8&rft.issn=';
+      let baseurl =
+        ".openurl.xml.serialssolutions.com/openurlxml?version=1.0&ctx_ver=Z39.88-2004&ctx_enc=info:ofi/enc:UTF-8&rft.issn=";
+      baseurl += String(issn);
+      console.log(baseurl);
+      main(baseurl);
+    }
+
+    /* 引数　-d --doi の時 
+    function call_doi(doi) {
+      let baseurl =
+        ".openurl.xml.serialssolutions.com/openurlxml?version=1.0&ctx_ver=Z39.88-2004&ctx_enc=info:ofi/enc:UTF-8&rft_id=info:doi/";
+      baseurl += doi;
+      main(baseurl);
+      // console.log("finalresult", final_result);
+    }*/
+
+    const json_result = {};
+    function namaeb(namaeb_res, namae) {
+      json_result[namae] = parseJSON(namaeb_res);
+      return json_result;
+    }
+
+    //（A)Async関数を定義 - asyncSample()
+    async function asyncSample(baseurl, namae) {
+      //(B)非同期処理を記載（結果はPromise(resolve)で処理）
+      try {
+        // const result = await fetchurl(baseurl, namae);
+        const result = await fetch(baseurl);
+        const json = await result.text();
+        //(C)awaitで非同期処理の結果を待つ
+        //resultの処理が返ったら関数の呼び出し元に返す
+        return await namaeb(json, namae);
+      } catch (e) {
+        console.error(e); //
+      }
+    }
+    let kaisu = 0;
+    function main(opurl) {
+      for (const i in portal) {
+        const baseurl = portal[i]["base"] + opurl;
+        const namae = portal[i]["namae"];
+
+        //(A')Async関数を呼び出して処理
+        asyncSample(baseurl, namae).then((async_res) => {
+          // final_result3 = asyncSample(baseurl, namae).then((res) => {
+          // 最後の結果だけを取り出すため、呼び出しの回数を数える
+
+          if (async_res) {
+            kaisu++;
+          }
+          if (kaisu == portal.length) {
             // onsole.log(res);
             // disp_result(json_result);
             final_result2 = disp_result(json_result);
@@ -242,26 +353,6 @@ router.get("/doi", function (req, res) {
       return final_result;
     }
 
-    // 階層化された JSON を再帰的に読み込む plotres
-    function plotres(response, prefix) {
-      for (const key in response) {
-        if (typeof response[key] == "object") {
-          if (Array.isArray(response[key])) {
-            // 配列の場合は forEach で要素ごとにに再帰呼び出し
-            response[key].forEach(function (item) {
-              plotres(item, prefix + "" + key);
-            });
-          } else {
-            // 連想配列はそのまま再帰呼び出し
-            plotres(response[key], prefix + " " + key);
-          }
-        } else {
-          // 配列や連想配列でなければキーの値を表示
-          console.log(prefix + " " + key + ": " + response[key]);
-        }
-      }
-    }
-
     /* 最後 */
     // console.log("saugi:", res);
     // return res.send("ff");
@@ -269,6 +360,7 @@ router.get("/doi", function (req, res) {
     return res.send(dummyData);
   }
 });
+
 module.exports = router;
 
 // xmlをjsonに変換して、必要な項目を取り出す
@@ -320,8 +412,8 @@ function parseJSON(response) {
     //endDate,
     // providerName,
     // databaseName,
-    // library,
-    // linkGroup,
+    library,
+    linkGroup,
   ];
 
   let arr = {}; // let arr = []; // const arr = [];
@@ -362,6 +454,26 @@ function getvalue(elem) {
     } else {
       const dcitem = [key, elem[key]._text];
       return dcitem;
+    }
+  }
+}
+
+// 階層化された JSON を再帰的に読み込む plotres
+function plotres(response, prefix) {
+  for (const key in response) {
+    if (typeof response[key] == "object") {
+      if (Array.isArray(response[key])) {
+        // 配列の場合は forEach で要素ごとにに再帰呼び出し
+        response[key].forEach(function (item) {
+          plotres(item, prefix + "" + key);
+        });
+      } else {
+        // 連想配列はそのまま再帰呼び出し
+        plotres(response[key], prefix + " " + key);
+      }
+    } else {
+      // 配列や連想配列でなければキーの値を表示
+      console.log(prefix + " " + key + ": " + response[key]);
     }
   }
 }
