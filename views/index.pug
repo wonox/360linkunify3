@@ -3,6 +3,24 @@ extends layout
 block content
   h1= title
   p Welcome to #{title}
+  p 360link を横断的に検索した結果を提供するweb api
   ul 
   li https://respected-fourth-bar.glitch.me/doi?issn=2376-0605
   li https://respected-fourth-bar.glitch.me/doi?doi=10.1016/j.patter.2020.100090
+
+  p 以下は、上記apiを使った検索フォーム
+    p ハイフンを含む9桁のISSNを入力するとISSNで検索、それ以外は9桁以上で自動的にDOIを検索
+  label
+    | cf.
+    li 10.1016/j.patter.2020.100090
+    li 10.1108/01435120210429934
+    li 10.1002/wow3.158
+    li 10.1246/bcsj.20210269
+    li 2059-3031
+  p
+    input(placeholder='Enter some text' name='name')
+  p#values
+  ul#listid
+  span.loading(style='visibility: hidden')
+    span
+  script(type='text/javascript' src='/javascripts/360link.js')
